@@ -21,6 +21,7 @@ import GameResult from '../components/GameResult.jsx';
 import PromotionModal from '../components/PromotionModal.jsx';
 import GameControls from '../components/GameControls.jsx';
 import ConflictWarningModal from '../components/ConflictWarningModal.jsx';
+import RematchModal from '../components/RematchModal.jsx';
 import CapturedPieces, { calcMaterialAdvantages } from '../components/CapturedPieces.jsx';
 import OnlineChat from '../components/OnlineChat.jsx';
 import { soundManager } from '../services/sound.js';
@@ -50,6 +51,9 @@ export default function OnlinePage() {
     resumeGame,
     sendChatMessage,
     messages,
+    rematchOffer,
+    acceptRematch,
+    declineRematch,
     playAgain,
     leaveGame,
   } = useOnlineGame();
@@ -576,9 +580,22 @@ export default function OnlinePage() {
         onCancel={() => setShowExitConfirm(false)}
       />
 
+      {/* Rematch Modal (5-Second Winner Notification & Immediate Actions) */}
+      <RematchModal
+        isOpen={!!rematchOffer}
+        rematchOffer={rematchOffer}
+        myColor={gameState.myColor}
+        onAccept={acceptRematch}
+        onDecline={() => {
+          declineRematch();
+          leaveGame();
+          navigate('/');
+        }}
+      />
+
       <GameResult
         result={gameState.result}
-        isOver={gameState.isOver}
+        isOver={gameState.isOver && !rematchOffer}
         onReplay={playAgain}
         onHome={() => navigate('/')}
       />
@@ -648,12 +665,11 @@ export default function OnlinePage() {
           </button>
           <button
             className="topbar-btn topbar-btn--danger"
-            onClick={() => {
-              if (window.confirm('Resign this match?')) resign();
-            }}
+            onClick={() => setShowExitConfirm(true)}
             disabled={gameState.isOver}
+            title="Resign or exit match"
           >
-            Resign
+            🏳 Resign
           </button>
         </div>
       </header>
@@ -797,6 +813,7 @@ export default function OnlinePage() {
                 setDrawOfferedByMe(true);
               }}
               onResign={resign}
+              onResignAndPlayAgain={playAgain}
               onOpenChat={() => {
                 setMobileChatOpen(true);
                 setUnreadCount(0);

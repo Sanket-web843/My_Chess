@@ -500,28 +500,113 @@ export function onConnection(io, socket) {
   /**
    * Resets and restarts the match in the same room for the same two players without creating a new room.
    * Swaps colors so players take turns playing White and Black.
-   * data: { roomId: string }
+   * Supports 5-second countdown popup where winner can choose immediate action (Accept / Exit).
+   * data: { roomId: string, immediate?: boolean }
    */
   socket.on('game:rematch', (data, ack) => {
+    const { roomId, immediate = false } = data ?? {};
+    const session = getSessionForPlayer(roomId, ack);
+    if (!session) return;
+
+    const callerColor = session.players.white === socket.id ? 'white' : 'black';
+    const opponentColor = callerColor === 'white' ? 'black' : 'white';
+    const opponentName = opponentColor === 'white' ? 'White' : 'Black';
+
+    let wasActive = false;
+    // If game is active, forfeit for caller before resetting so opponent is declared the winner!
+    if (session.status === 'active') {
+      wasActive = true;
+      session.stopClocks();
+      session.resignedBy = callerColor;
+      session.status = 'finished';
+      session.resultText = `${opponentName} wins — ${callerColor} resigned`;
+      console.log(`[game:rematch] room=${session.id}: ${callerColor} resigned & requested rematch`);
+      io.to(session.id).emit('game:state', session.toSnapshot());
+    }
+
+    if (typeof ack === 'function') ack({ ok: true });
+
+    if (immediate) {
+      if (session.rematchTimer) {
+        clearTimeout(session.rematchTimer);
+        session.rematchTimer = null;
+      }
+      session.pendingRematch = null;
+      session.rematch();
+      console.log(`[game:rematch] room=${session.id} restarted immediately with colors swapped`);
+      const snapshot = session.toSnapshot();
+      io.to(session.id).emit('game:start', snapshot);
+      io.to(session.id).emit('game:state', snapshot);
+      return;
+    }
+
+    // 5-second countdown popup offer
+    if (session.rematchTimer) {
+      clearTimeout(session.rematchTimer);
+      session.rematchTimer = null;
+    }
+
+    const countdownSeconds = 5;
+    const expiresAt = Date.now() + countdownSeconds * 1000;
+    session.pendingRematch = {
+      requestedBy: callerColor,
+      winner: wasActive ? opponentColor : null,
+      expiresAt,
+    };
+
+    io.to(session.id).emit('rematch:offer', {
+      requestedBy: callerColor,
+      winner: wasActive ? opponentColor : null,
+      countdownSeconds,
+      expiresAt,
+    });
+
+    session.rematchTimer = setTimeout(() => {
+      if (session.pendingRematch) {
+        session.rematchTimer = null;
+        session.pendingRematch = null;
+        session.rematch();
+        console.log(`[game:rematch:auto] room=${session.id} auto-started after 5s countdown`);
+        const snapshot = session.toSnapshot();
+        io.to(session.id).emit('game:start', snapshot);
+        io.to(session.id).emit('game:state', snapshot);
+      }
+    }, countdownSeconds * 1000);
+  });
+
+  socket.on('game:rematchAccept', (data, ack) => {
+    const { roomId } = data ?? {};
+    const session = getSessionForPlayer(roomId, ack);
+    if (!session || !session.pendingRematch) return;
+
+    if (session.rematchTimer) {
+      clearTimeout(session.rematchTimer);
+      session.rematchTimer = null;
+    }
+    session.pendingRematch = null;
+    if (typeof ack === 'function') ack({ ok: true });
+
+    session.rematch();
+    console.log(`[game:rematch:accepted] room=${session.id} started immediately by winner`);
+    const snapshot = session.toSnapshot();
+    io.to(session.id).emit('game:start', snapshot);
+    io.to(session.id).emit('game:state', snapshot);
+  });
+
+  socket.on('game:rematchDecline', (data, ack) => {
     const { roomId } = data ?? {};
     const session = getSessionForPlayer(roomId, ack);
     if (!session) return;
 
-    // If game is still active, forfeit for caller before resetting
-    if (session.status === 'active') {
-      const callerColor = session.players.white === socket.id ? 'white' : 'black';
-      session.resignedBy = callerColor;
-      session.status = 'finished';
+    if (session.rematchTimer) {
+      clearTimeout(session.rematchTimer);
+      session.rematchTimer = null;
     }
-
-    session.rematch();
-    console.log(`[game:rematch] room=${session.id} restarted in same session with colors swapped`);
-
+    session.pendingRematch = null;
     if (typeof ack === 'function') ack({ ok: true });
 
-    const snapshot = session.toSnapshot();
-    io.to(session.id).emit('game:start', snapshot);
-    io.to(session.id).emit('game:state', snapshot);
+    console.log(`[game:rematch:declined] room=${session.id} rematch declined`);
+    io.to(session.id).emit('rematch:declined', { roomId: session.id });
   });
 
   // ── Cleanup on disconnect with 60s reconnection grace period ───────
@@ -530,6 +615,12 @@ export function onConnection(io, socket) {
       const isWhite = session.players.white === socket.id;
       const isBlack = session.players.black === socket.id;
       if (!isWhite && !isBlack) continue;
+
+      if (session.rematchTimer) {
+        clearTimeout(session.rematchTimer);
+        session.rematchTimer = null;
+      }
+      session.pendingRematch = null;
 
       const disconnectedColor = isWhite ? 'white' : 'black';
       const remainingColor = isWhite ? 'black' : 'white';

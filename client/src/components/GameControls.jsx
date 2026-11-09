@@ -27,6 +27,7 @@ export default function GameControls({
   isOnline = false,
   onOfferDraw,
   onResign,
+  onResignAndPlayAgain,
   onOpenChat,
   unreadChatCount = 0,
 }) {
@@ -39,7 +40,11 @@ export default function GameControls({
   };
 
   const handleResignGeneral = () => {
-    if (window.confirm('Resign this game? This cannot be undone.')) {
+    if (onResignAndPlayAgain) {
+      if (window.confirm('Resign this game and immediately play again with swapped colors?')) {
+        onResignAndPlayAgain();
+      }
+    } else if (window.confirm('Resign this game? This cannot be undone.')) {
       if (onResign) onResign();
     }
   };
@@ -109,8 +114,9 @@ export default function GameControls({
                 <button
                   className="game-controls__btn game-controls__btn--resign"
                   onClick={handleResignGeneral}
+                  title="Resign current match and start a new match in the same room"
                 >
-                  <span>🏳</span> Resign
+                  <span>🔄</span> Resign & Play Again
                 </button>
               </div>
             ) : (

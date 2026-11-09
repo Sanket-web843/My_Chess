@@ -54,6 +54,7 @@ export function useOnlineGame() {
   const [drawOffer, setDrawOffer] = useState(null); // { from: 'white' | 'black' }
   const [pauseOffer, setPauseOffer] = useState(null); // { from: 'white' | 'black' }
   const [resumeOffer, setResumeOffer] = useState(null); // { from: 'white' | 'black' }
+  const [rematchOffer, setRematchOffer] = useState(null); // { requestedBy, winner, countdownSeconds, expiresAt }
   const [opponentDisconnected, setOpponentDisconnected] = useState(null);
   const [messages, setMessages] = useState([]);
   const [errorMsg, setErrorMsg] = useState(null);
@@ -145,6 +146,7 @@ export function useOnlineGame() {
     function onGameStart(snapshot) {
       soundManager.playMove();
       setOpponentDisconnected(null);
+      setRematchOffer(null);
       setGameState((prev) => {
         const turnColor = snapshot.turn === 'w' ? 'white' : snapshot.turn === 'b' ? 'black' : snapshot.turn;
         const myColor = snapshot.players?.white === socket.id
@@ -220,6 +222,14 @@ export function useOnlineGame() {
       setErrorMsg(typeof err === 'string' ? err : err.message || 'An error occurred');
     }
 
+    function onRematchOffer(data) {
+      setRematchOffer(data);
+    }
+
+    function onRematchDeclined() {
+      setRematchOffer(null);
+    }
+
     socket.on('game:state', onGameState);
     socket.on('game:start', onGameStart);
     socket.on('game:drawOffer', onDrawOffer);
@@ -230,6 +240,8 @@ export function useOnlineGame() {
     socket.on('game:resumeOffer', onResumeOffer);
     socket.on('game:resumed', onResumed);
     socket.on('game:resumeRejected', onResumeRejected);
+    socket.on('rematch:offer', onRematchOffer);
+    socket.on('rematch:declined', onRematchDeclined);
     socket.on('game:playerDisconnected', onPlayerDisconnected);
     socket.on('game:playerReconnected', onPlayerReconnected);
     socket.on('chat:message', onChatMessage);
@@ -246,6 +258,8 @@ export function useOnlineGame() {
       socket.off('game:resumeOffer', onResumeOffer);
       socket.off('game:resumed', onResumed);
       socket.off('game:resumeRejected', onResumeRejected);
+      socket.off('rematch:offer', onRematchOffer);
+      socket.off('rematch:declined', onRematchDeclined);
       socket.off('game:playerDisconnected', onPlayerDisconnected);
       socket.off('game:playerReconnected', onPlayerReconnected);
       socket.off('chat:message', onChatMessage);
@@ -375,9 +389,21 @@ export function useOnlineGame() {
     socket.emit('chat:send', { roomId: gameState.roomId, text: text.trim() });
   }, [gameState.roomId]);
 
-  const playAgain = useCallback(() => {
+  const playAgain = useCallback((immediate = false) => {
     if (!gameState.roomId) return;
-    socket.emit('game:rematch', { roomId: gameState.roomId });
+    socket.emit('game:rematch', { roomId: gameState.roomId, immediate });
+  }, [gameState.roomId]);
+
+  const acceptRematch = useCallback(() => {
+    if (!gameState.roomId) return;
+    socket.emit('game:rematchAccept', { roomId: gameState.roomId });
+    setRematchOffer(null);
+  }, [gameState.roomId]);
+
+  const declineRematch = useCallback(() => {
+    if (!gameState.roomId) return;
+    socket.emit('game:rematchDecline', { roomId: gameState.roomId });
+    setRematchOffer(null);
   }, [gameState.roomId]);
 
   const leaveGame = useCallback(() => {
@@ -386,6 +412,7 @@ export function useOnlineGame() {
     setDrawOffer(null);
     setPauseOffer(null);
     setResumeOffer(null);
+    setRematchOffer(null);
     setOpponentDisconnected(null);
     setMessages([]);
     setErrorMsg(null);
@@ -397,6 +424,7 @@ export function useOnlineGame() {
     drawOffer,
     pauseOffer,
     resumeOffer,
+    rematchOffer,
     opponentDisconnected,
     messages,
     errorMsg,
@@ -416,6 +444,8 @@ export function useOnlineGame() {
     rejectResume,
     sendChatMessage,
     playAgain,
+    acceptRematch,
+    declineRematch,
     leaveGame,
   };
 }

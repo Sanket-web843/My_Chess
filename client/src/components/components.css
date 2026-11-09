@@ -645,3 +645,41 @@
   color: #ffffff;
   border-color: var(--clr-accent);
 }
+
+/* ── Rematch Modal & Countdown ── */
+.rematch-modal-card {
+  text-align: center;
+  border: 1px solid var(--clr-accent);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.75), 0 0 28px rgba(129, 182, 76, 0.25);
+  max-width: 420px;
+}
+
+.rematch-timer-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 1rem 0;
+}
+
+.rematch-countdown-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(129, 182, 76, 0.15);
+  border: 2px solid var(--clr-accent);
+  color: var(--clr-accent);
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-bottom: 0.45rem;
+  box-shadow: 0 0 14px rgba(129, 182, 76, 0.35);
+}
+
+.rematch-timer-label {
+  font-size: 0.84rem;
+  color: var(--clr-text-muted);
+  font-weight: 600;
+}

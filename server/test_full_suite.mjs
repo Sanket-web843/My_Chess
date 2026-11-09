@@ -409,15 +409,37 @@ async function runTests() {
     rematchSocket1.emit('game:move', { roomId: rematchRoom.roomId, move: { from: 'e2', to: 'e4' } }, resolve);
   });
 
-  // Now trigger game:rematch ("Resign & Play Again" or "Draw & Play Again")
-  const restartPromise1 = new Promise((resolve) => {
-    rematchSocket1.once('game:start', resolve);
-  });
-  const restartPromise2 = new Promise((resolve) => {
-    rematchSocket2.once('game:start', resolve);
+  // Now trigger game:rematch ("Resign & Play Again")
+  // Both players should receive rematch:offer with 5-second countdown
+  // Socket 2 (Black) is the WINNER!
+  const offerPromise1 = new Promise((resolve) => rematchSocket1.once('rematch:offer', resolve));
+  const offerPromise2 = new Promise((resolve) => rematchSocket2.once('rematch:offer', resolve));
+  const finishPromise = new Promise((resolve) => {
+    const handler = (state) => {
+      if (state.status === 'finished') {
+        rematchSocket2.off('game:state', handler);
+        resolve(state);
+      }
+    };
+    rematchSocket2.on('game:state', handler);
   });
 
   rematchSocket1.emit('game:rematch', { roomId: rematchRoom.roomId });
+
+  const [offer1, offer2, finishedSnapshot] = await Promise.all([offerPromise1, offerPromise2, finishPromise]);
+
+  assert.strictEqual(finishedSnapshot.status, 'finished');
+  assert.ok(finishedSnapshot.result.includes('Black wins'), 'Black should be declared winner on resignation');
+  assert.strictEqual(offer2.winner, 'black', 'Socket 2 must be designated as winner');
+  assert.strictEqual(offer2.countdownSeconds, 5, 'Countdown must be 5 seconds');
+  console.log(`  ✓ Opponent resignation verified: ${finishedSnapshot.result}`);
+  console.log(`  ✓ 5s popup offer emitted: winner=[${offer2.winner}], countdown=${offer2.countdownSeconds}s`);
+
+  // Winner chooses immediate action: "Accept & Play Now" (no countdown wait)
+  const restartPromise1 = new Promise((resolve) => rematchSocket1.once('game:start', resolve));
+  const restartPromise2 = new Promise((resolve) => rematchSocket2.once('game:start', resolve));
+
+  rematchSocket2.emit('game:rematchAccept', { roomId: rematchRoom.roomId });
 
   const [snap1, snap2] = await Promise.all([restartPromise1, restartPromise2]);
 
@@ -430,12 +452,11 @@ async function runTests() {
   assert.strictEqual(snap1.players.black, rematchSocket1.id);
   assert.strictEqual(snap2.players.white, rematchSocket2.id);
   assert.strictEqual(snap2.players.black, rematchSocket1.id);
-  console.log('  ✓ Rematch restarted game in same session: board reset, history cleared');
-  console.log('  ✓ Colors authoritatively swapped: player 2 is now White, player 1 is now Black');
+  console.log('  ✓ Winner clicked Accept: immediate start with colors swapped without countdown wait');
 
   rematchSocket1.disconnect();
   rematchSocket2.disconnect();
-  console.log('✓ TEST 9 PASSED: Rematch / Play Again in same session verified!\n');
+  console.log('✓ TEST 9 PASSED: Rematch / Play Again & 5s Winner Popup verified!\n');
 
   // Clean up
   socketAReconnected.disconnect();
