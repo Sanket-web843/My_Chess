@@ -1,0 +1,21 @@
+/* ── ChessBoard.css ─────────────────────────────────────────────
+   Standard chessboard container with strict aspect-ratio & touch lock.
+   ──────────────────────────────────────────────────────────────── */
+
+.chess-board-wrapper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none; /* strictly locks touch scrolling when interacting with the board */
+}
+
+.chess-board-wrapper > div {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.chess-board-wrapper [data-square] {
+  touch-action: none;
+}

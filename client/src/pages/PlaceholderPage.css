@@ -1,0 +1,84 @@
+/* ── PlaceholderPage.css — Clean, Muted Modal/Card ── */
+
+.placeholder-page {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background-color: var(--clr-bg-deep);
+  color: var(--clr-text-main);
+}
+
+.placeholder-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 2.5rem 2rem;
+  width: 100%;
+  max-width: 400px;
+  background-color: var(--clr-bg-surface);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-subtle);
+  text-align: center;
+}
+
+.placeholder-icon {
+  font-size: 3rem;
+  line-height: 1;
+}
+
+.placeholder-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--clr-white);
+}
+
+.placeholder-desc {
+  font-size: 0.9rem;
+  color: var(--clr-text-muted);
+  line-height: 1.6;
+}
+
+.placeholder-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--radius-xs);
+  font-size: 0.75rem;
+  font-weight: 600;
+  background-color: var(--clr-bg-elevated);
+  border: 1px solid var(--clr-border);
+  color: var(--clr-text-muted);
+}
+
+.connection-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--radius-xs);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.connection-badge--on {
+  background-color: rgba(129, 182, 76, 0.15);
+  border: 1px solid rgba(129, 182, 76, 0.35);
+  color: var(--clr-accent);
+}
+
+.connection-badge--off {
+  background-color: rgba(224, 83, 83, 0.15);
+  border: 1px solid rgba(224, 83, 83, 0.35);
+  color: var(--clr-danger);
+}
+
+.connection-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: currentColor;
+}
