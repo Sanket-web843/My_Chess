@@ -55,6 +55,7 @@ export function useOnlineGame() {
   const [pauseOffer, setPauseOffer] = useState(null); // { from: 'white' | 'black' }
   const [resumeOffer, setResumeOffer] = useState(null); // { from: 'white' | 'black' }
   const [opponentDisconnected, setOpponentDisconnected] = useState(null);
+  const [messages, setMessages] = useState([]);
   const [errorMsg, setErrorMsg] = useState(null);
   const reconnectedRef = useRef(false);
 
@@ -192,6 +193,11 @@ export function useOnlineGame() {
       soundManager.playMove();
     }
 
+    function onChatMessage(msg) {
+      setMessages((prev) => [...prev, msg]);
+      soundManager.playMove();
+    }
+
     function onGameError(err) {
       setErrorMsg(typeof err === 'string' ? err : err.message || 'An error occurred');
     }
@@ -208,6 +214,7 @@ export function useOnlineGame() {
     socket.on('game:resumeRejected', onResumeRejected);
     socket.on('game:playerDisconnected', onPlayerDisconnected);
     socket.on('game:playerReconnected', onPlayerReconnected);
+    socket.on('chat:message', onChatMessage);
     socket.on('game:error', onGameError);
 
     return () => {
@@ -223,6 +230,7 @@ export function useOnlineGame() {
       socket.off('game:resumeRejected', onResumeRejected);
       socket.off('game:playerDisconnected', onPlayerDisconnected);
       socket.off('game:playerReconnected', onPlayerReconnected);
+      socket.off('chat:message', onChatMessage);
       socket.off('game:error', onGameError);
     };
   }, []);
@@ -344,6 +352,11 @@ export function useOnlineGame() {
     socket.emit('game:resumeReject', { roomId: gameState.roomId });
   }, [gameState.roomId]);
 
+  const sendChatMessage = useCallback((text) => {
+    if (!gameState.roomId || typeof text !== 'string' || !text.trim()) return;
+    socket.emit('chat:send', { roomId: gameState.roomId, text: text.trim() });
+  }, [gameState.roomId]);
+
   const leaveGame = useCallback(() => {
     sessionRemove(ONLINE_SESSION_KEY);
     setGameState(INITIAL_STATE);
@@ -351,6 +364,7 @@ export function useOnlineGame() {
     setPauseOffer(null);
     setResumeOffer(null);
     setOpponentDisconnected(null);
+    setMessages([]);
     setErrorMsg(null);
   }, []);
 
@@ -361,6 +375,7 @@ export function useOnlineGame() {
     pauseOffer,
     resumeOffer,
     opponentDisconnected,
+    messages,
     errorMsg,
     createRoom,
     joinRoom,
@@ -376,6 +391,7 @@ export function useOnlineGame() {
     offerResume,
     acceptResume,
     rejectResume,
+    sendChatMessage,
     leaveGame,
   };
 }

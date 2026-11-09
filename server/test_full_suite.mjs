@@ -334,12 +334,60 @@ async function runTests() {
   console.log('  ✓ Pause timeout correctly forfeits pauser and awards win to opponent');
   console.log('✓ TEST 7 PASSED: Pause timeout forfeiture verified!\n');
 
+  // ─────────────────────────────────────────────────────────────
+  // TEST 8: In-Game Real-Time Chat (Bidirectional & Room Broadcast)
+  // ─────────────────────────────────────────────────────────────
+  console.log('[TEST 8] Testing In-Game Real-Time Chat...');
+  const chatSocket1 = createSocket();
+  const chatSocket2 = createSocket();
+
+  await new Promise((resolve) => {
+    let connected = 0;
+    const check = () => { if (++connected === 2) resolve(); };
+    chatSocket1.on('connect', check);
+    chatSocket2.on('connect', check);
+  });
+
+  const chatRoom = await new Promise((resolve) => {
+    chatSocket1.emit('room:create', { timeMode: 'classical', playerToken: 'chat_tok_1' }, resolve);
+  });
+  await new Promise((resolve) => {
+    chatSocket2.emit('room:join', { roomId: chatRoom.roomId, playerToken: 'chat_tok_2' }, resolve);
+  });
+
+  // White sends a chat message
+  const chatMsgPromise = new Promise((resolve) => {
+    chatSocket2.once('chat:message', resolve);
+  });
+  chatSocket1.emit('chat:send', { roomId: chatRoom.roomId, text: 'Good luck, have fun!' });
+  const receivedMsg = await chatMsgPromise;
+
+  assert.strictEqual(receivedMsg.sender, 'white');
+  assert.strictEqual(receivedMsg.text, 'Good luck, have fun!');
+  assert.ok(receivedMsg.timestamp > 0);
+  console.log(`  ✓ Chat message delivered to opponent: [${receivedMsg.sender}] "${receivedMsg.text}"`);
+
+  // Black replies
+  const chatReplyPromise = new Promise((resolve) => {
+    chatSocket1.once('chat:message', resolve);
+  });
+  chatSocket2.emit('chat:send', { roomId: chatRoom.roomId, text: 'You too! Let us play well.' });
+  const receivedReply = await chatReplyPromise;
+
+  assert.strictEqual(receivedReply.sender, 'black');
+  assert.strictEqual(receivedReply.text, 'You too! Let us play well.');
+  console.log(`  ✓ Chat reply delivered back: [${receivedReply.sender}] "${receivedReply.text}"`);
+
+  chatSocket1.disconnect();
+  chatSocket2.disconnect();
+  console.log('✓ TEST 8 PASSED: In-Game chat verified!\n');
+
   // Clean up
   socketAReconnected.disconnect();
   socketB.disconnect();
 
   console.log('====================================================');
-  console.log('       ALL 7 TESTS PASSED SUCCESSFULLY! (100%)       ');
+  console.log('       ALL 8 TESTS PASSED SUCCESSFULLY! (100%)       ');
   console.log('====================================================\n');
   process.exit(0);
 }

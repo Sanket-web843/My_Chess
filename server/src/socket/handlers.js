@@ -468,6 +468,34 @@ export function onConnection(io, socket) {
     if (typeof ack === 'function') ack({});
   });
 
+  // ── chat:send ─────────────────────────────────────────────────────
+  /**
+   * Broadcasts a chat message between players in the room.
+   * data: { roomId: string, text: string }
+   */
+  socket.on('chat:send', (data, ack) => {
+    const { roomId, text } = data ?? {};
+    const session = getSessionForPlayer(roomId, ack);
+    if (!session) return;
+
+    if (typeof text !== 'string' || !text.trim()) {
+      if (typeof ack === 'function') ack({ error: 'Message cannot be empty' });
+      return;
+    }
+
+    const cleanText = text.trim().slice(0, 150);
+    const senderColor = session.players.white === socket.id ? 'white' : 'black';
+    const message = {
+      id: 'msg_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      sender: senderColor,
+      text: cleanText,
+      timestamp: Date.now(),
+    };
+
+    io.to(session.id).emit('chat:message', message);
+    if (typeof ack === 'function') ack({ ok: true });
+  });
+
   // ── Cleanup on disconnect with 60s reconnection grace period ───────
   socket.on('disconnect', () => {
     for (const [, session] of gameManager.sessions) {

@@ -22,6 +22,7 @@ import PromotionModal from '../components/PromotionModal.jsx';
 import GameControls from '../components/GameControls.jsx';
 import ConflictWarningModal from '../components/ConflictWarningModal.jsx';
 import CapturedPieces, { calcMaterialAdvantages } from '../components/CapturedPieces.jsx';
+import OnlineChat from '../components/OnlineChat.jsx';
 import { soundManager } from '../services/sound.js';
 
 import '../components/components.css';
@@ -47,6 +48,8 @@ export default function OnlinePage() {
     acceptPause,
     rejectPause,
     resumeGame,
+    sendChatMessage,
+    messages,
     leaveGame,
   } = useOnlineGame();
 
@@ -59,6 +62,11 @@ export default function OnlinePage() {
   const [drawOfferedByMe, setDrawOfferedByMe] = useState(false);
   const [pauseOfferedByMe, setPauseOfferedByMe] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(() => soundManager.isEnabled());
+
+  // Chat tabs & mobile drawer
+  const [activeTab, setActiveTab] = useState('moves'); // 'moves' | 'chat'
+  const [mobileChatOpen, setMobileChatOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   // Timed pause selection modal & countdown state
   const [showPauseModal, setShowPauseModal] = useState(false);
@@ -79,6 +87,15 @@ export default function OnlinePage() {
       setPauseOfferedByMe(false);
     }
   }, [gameState.isPaused]);
+
+  // Track unread chat messages when chat is not in active view
+  useEffect(() => {
+    if (!messages || messages.length === 0) return;
+    const last = messages[messages.length - 1];
+    if (last.sender !== gameState.myColor && activeTab !== 'chat' && !mobileChatOpen) {
+      setUnreadCount((c) => c + 1);
+    }
+  }, [messages, gameState.myColor, activeTab, mobileChatOpen]);
 
   // Live countdown timer for pause expiration
   useEffect(() => {
@@ -618,6 +635,18 @@ export default function OnlinePage() {
           >
             {soundEnabled ? '🔊 Sound' : '🔇 Muted'}
           </button>
+          <button
+            className="topbar-btn chat-toggle-pill"
+            onClick={() => {
+              setMobileChatOpen((o) => !o);
+              setUnreadCount(0);
+            }}
+            title="Toggle live match chat"
+            aria-label="Toggle live match chat"
+          >
+            💬 Chat
+            {unreadCount > 0 && <span className="sidebar-tab-badge">{unreadCount}</span>}
+          </button>
           <button className="topbar-btn" onClick={flipBoard}>
             ⇅ Flip
           </button>
@@ -723,9 +752,36 @@ export default function OnlinePage() {
 
         {/* Sidebar (Desktop) & Bottom App Bar (Mobile) */}
         <aside className="game-sidebar-area">
-          <div className="sidebar-history-box">
-            <h3 className="sidebar-section-title">Moves</h3>
-            <MoveHistory history={gameState.history} />
+          <div className="sidebar-history-box" style={{ display: 'flex', flexDirection: 'column' }}>
+            <div className="sidebar-tab-row">
+              <button
+                type="button"
+                className={`sidebar-tab-btn ${activeTab === 'moves' ? 'sidebar-tab-btn--active' : ''}`}
+                onClick={() => setActiveTab('moves')}
+              >
+                <span>♟ Moves ({gameState.history.length})</span>
+              </button>
+              <button
+                type="button"
+                className={`sidebar-tab-btn ${activeTab === 'chat' ? 'sidebar-tab-btn--active' : ''}`}
+                onClick={() => {
+                  setActiveTab('chat');
+                  setUnreadCount(0);
+                }}
+              >
+                <span>💬 Chat</span>
+                {unreadCount > 0 && <span className="sidebar-tab-badge">{unreadCount}</span>}
+              </button>
+            </div>
+            {activeTab === 'moves' ? (
+              <MoveHistory history={gameState.history} />
+            ) : (
+              <OnlineChat
+                messages={messages}
+                myColor={gameState.myColor}
+                onSendMessage={sendChatMessage}
+              />
+            )}
           </div>
 
           <div className="sidebar-controls-box">
@@ -751,6 +807,17 @@ export default function OnlinePage() {
           </div>
         </aside>
       </main>
+
+      {/* Mobile Chat Slide-Up Drawer */}
+      {mobileChatOpen && (
+        <OnlineChat
+          messages={messages}
+          myColor={gameState.myColor}
+          onSendMessage={sendChatMessage}
+          isMobileDrawer={true}
+          onClose={() => setMobileChatOpen(false)}
+        />
+      )}
     </div>
   );
 }
