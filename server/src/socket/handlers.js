@@ -496,6 +496,34 @@ export function onConnection(io, socket) {
     if (typeof ack === 'function') ack({ ok: true });
   });
 
+  // ── game:rematch ──────────────────────────────────────────────────
+  /**
+   * Resets and restarts the match in the same room for the same two players without creating a new room.
+   * Swaps colors so players take turns playing White and Black.
+   * data: { roomId: string }
+   */
+  socket.on('game:rematch', (data, ack) => {
+    const { roomId } = data ?? {};
+    const session = getSessionForPlayer(roomId, ack);
+    if (!session) return;
+
+    // If game is still active, forfeit for caller before resetting
+    if (session.status === 'active') {
+      const callerColor = session.players.white === socket.id ? 'white' : 'black';
+      session.resignedBy = callerColor;
+      session.status = 'finished';
+    }
+
+    session.rematch();
+    console.log(`[game:rematch] room=${session.id} restarted in same session with colors swapped`);
+
+    if (typeof ack === 'function') ack({ ok: true });
+
+    const snapshot = session.toSnapshot();
+    io.to(session.id).emit('game:start', snapshot);
+    io.to(session.id).emit('game:state', snapshot);
+  });
+
   // ── Cleanup on disconnect with 60s reconnection grace period ───────
   socket.on('disconnect', () => {
     for (const [, session] of gameManager.sessions) {

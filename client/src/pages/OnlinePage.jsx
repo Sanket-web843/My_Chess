@@ -50,6 +50,7 @@ export default function OnlinePage() {
     resumeGame,
     sendChatMessage,
     messages,
+    playAgain,
     leaveGame,
   } = useOnlineGame();
 
@@ -562,18 +563,23 @@ export default function OnlinePage() {
       <ConflictWarningModal
         isOpen={showExitConfirm}
         title="Active Online Match"
-        message="You are currently in an active online match. Leaving will forfeit the game for you. Are you sure you want to resign and exit?"
+        message="You are currently in an active online match. Leaving or restarting will forfeit the game for you. What would you like to do?"
         resumeText="Stay in Match"
-        abandonText="Resign & Exit"
+        abandonText="🏳 Resign & Exit"
+        secondaryActionText="🔄 Resign & Play Again"
         onResume={() => setShowExitConfirm(false)}
         onAbandon={handleConfirmExit}
+        onSecondaryAction={() => {
+          playAgain();
+          setShowExitConfirm(false);
+        }}
         onCancel={() => setShowExitConfirm(false)}
       />
 
       <GameResult
         result={gameState.result}
         isOver={gameState.isOver}
-        onReplay={leaveGame}
+        onReplay={playAgain}
         onHome={() => navigate('/')}
       />
 

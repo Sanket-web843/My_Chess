@@ -239,6 +239,7 @@ export class GameSession {
     this.isDraw = false;
     this.isPaused = false;
     this.pausedBy = null;
+    this.resignedBy = null;
     this.lastActivityAt = Date.now();
 
     const cfg = TIME_CONFIGS[this.timeMode] || TIME_CONFIGS['classical'];

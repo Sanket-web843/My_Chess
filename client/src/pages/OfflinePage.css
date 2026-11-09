@@ -349,7 +349,17 @@
   }
 }
 
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
 .topbar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
   background-color: var(--clr-bg-elevated);
   border: 1px solid var(--clr-border);
   border-radius: var(--radius-xs);
@@ -358,6 +368,7 @@
   font-weight: 600;
   padding: 0.35rem 0.75rem;
   min-height: 32px;
+  cursor: pointer;
   transition: background-color 100ms ease, color 100ms ease;
 }
 .topbar-btn:hover {

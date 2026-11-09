@@ -382,12 +382,67 @@ async function runTests() {
   chatSocket2.disconnect();
   console.log('✓ TEST 8 PASSED: In-Game chat verified!\n');
 
+  // ─────────────────────────────────────────────────────────────
+  // TEST 9: Play Again / Rematch in Same Session (Color Swap & Reset)
+  // ─────────────────────────────────────────────────────────────
+  console.log('[TEST 9] Testing Rematch / Play Again in Same Session...');
+  const rematchSocket1 = createSocket();
+  const rematchSocket2 = createSocket();
+
+  await new Promise((resolve) => {
+    let connected = 0;
+    const check = () => { if (++connected === 2) resolve(); };
+    rematchSocket1.on('connect', check);
+    rematchSocket2.on('connect', check);
+  });
+
+  const rematchRoom = await new Promise((resolve) => {
+    rematchSocket1.emit('room:create', { timeMode: 'classical', playerToken: 'rematch_tok_1' }, resolve);
+  });
+  await new Promise((resolve) => {
+    rematchSocket2.emit('room:join', { roomId: rematchRoom.roomId, playerToken: 'rematch_tok_2' }, resolve);
+  });
+
+  // Socket 1 was White, Socket 2 was Black
+  // Socket 1 makes move e2->e4
+  await new Promise((resolve) => {
+    rematchSocket1.emit('game:move', { roomId: rematchRoom.roomId, move: { from: 'e2', to: 'e4' } }, resolve);
+  });
+
+  // Now trigger game:rematch ("Resign & Play Again" or "Draw & Play Again")
+  const restartPromise1 = new Promise((resolve) => {
+    rematchSocket1.once('game:start', resolve);
+  });
+  const restartPromise2 = new Promise((resolve) => {
+    rematchSocket2.once('game:start', resolve);
+  });
+
+  rematchSocket1.emit('game:rematch', { roomId: rematchRoom.roomId });
+
+  const [snap1, snap2] = await Promise.all([restartPromise1, restartPromise2]);
+
+  assert.strictEqual(snap1.status, 'active');
+  assert.strictEqual(snap1.isOver, false);
+  assert.strictEqual(snap1.history.length, 0);
+  assert.strictEqual(snap1.fen, 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
+  // Confirm colors swapped! Socket 2 is now White, Socket 1 is now Black
+  assert.strictEqual(snap1.players.white, rematchSocket2.id);
+  assert.strictEqual(snap1.players.black, rematchSocket1.id);
+  assert.strictEqual(snap2.players.white, rematchSocket2.id);
+  assert.strictEqual(snap2.players.black, rematchSocket1.id);
+  console.log('  ✓ Rematch restarted game in same session: board reset, history cleared');
+  console.log('  ✓ Colors authoritatively swapped: player 2 is now White, player 1 is now Black');
+
+  rematchSocket1.disconnect();
+  rematchSocket2.disconnect();
+  console.log('✓ TEST 9 PASSED: Rematch / Play Again in same session verified!\n');
+
   // Clean up
   socketAReconnected.disconnect();
   socketB.disconnect();
 
   console.log('====================================================');
-  console.log('       ALL 8 TESTS PASSED SUCCESSFULLY! (100%)       ');
+  console.log('       ALL 9 TESTS PASSED SUCCESSFULLY! (100%)       ');
   console.log('====================================================\n');
   process.exit(0);
 }

@@ -8,8 +8,10 @@ export default function ConflictWarningModal({
   message,
   resumeText = 'Resume Match',
   abandonText = 'Abandon & Switch Mode',
+  secondaryActionText,
   onResume,
   onAbandon,
+  onSecondaryAction,
   onCancel,
 }) {
   if (!isOpen) return null;
@@ -25,19 +27,33 @@ export default function ConflictWarningModal({
         <p className="conflict-modal-message">{message}</p>
 
         <div className="conflict-modal-actions">
-          <button
-            className="btn btn--primary conflict-btn"
-            onClick={onResume}
-          >
-            {resumeText}
-          </button>
+          {onResume && (
+            <button
+              className="btn btn--primary conflict-btn"
+              onClick={onResume}
+            >
+              {resumeText}
+            </button>
+          )}
 
-          <button
-            className="btn btn--danger conflict-btn"
-            onClick={onAbandon}
-          >
-            {abandonText}
-          </button>
+          {secondaryActionText && onSecondaryAction && (
+            <button
+              className="btn btn--secondary conflict-btn"
+              onClick={onSecondaryAction}
+              style={{ borderColor: 'var(--clr-accent)', color: 'var(--clr-accent)' }}
+            >
+              {secondaryActionText}
+            </button>
+          )}
+
+          {onAbandon && (
+            <button
+              className="btn btn--danger conflict-btn"
+              onClick={onAbandon}
+            >
+              {abandonText}
+            </button>
+          )}
 
           {onCancel && (
             <button

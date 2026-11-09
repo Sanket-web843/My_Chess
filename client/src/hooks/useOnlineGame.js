@@ -106,6 +106,11 @@ export function useOnlineGame() {
       setGameState((prev) => {
         const turnColor = snapshot.turn === 'w' ? 'white' : snapshot.turn === 'b' ? 'black' : snapshot.turn;
         const newHistory = snapshot.history || [];
+        const myColor = snapshot.players?.white === socket.id
+          ? 'white'
+          : snapshot.players?.black === socket.id
+          ? 'black'
+          : prev.myColor;
 
         // Play move sound if a new move occurred
         if (newHistory.length > (prev.history?.length || 0)) {
@@ -122,11 +127,14 @@ export function useOnlineGame() {
         if (isOver) {
           sessionRemove(ONLINE_SESSION_KEY);
           setOpponentDisconnected(null);
+        } else if (myColor && (snapshot.id || prev.roomId)) {
+          sessionSet(ONLINE_SESSION_KEY, { roomId: snapshot.id || prev.roomId, myColor });
         }
 
         return {
           ...prev,
           ...snapshot,
+          myColor,
           turn: turnColor,
           history: newHistory,
           isOver,
@@ -139,13 +147,23 @@ export function useOnlineGame() {
       setOpponentDisconnected(null);
       setGameState((prev) => {
         const turnColor = snapshot.turn === 'w' ? 'white' : snapshot.turn === 'b' ? 'black' : snapshot.turn;
+        const myColor = snapshot.players?.white === socket.id
+          ? 'white'
+          : snapshot.players?.black === socket.id
+          ? 'black'
+          : prev.myColor;
+        if (myColor && (snapshot.id || prev.roomId)) {
+          sessionSet(ONLINE_SESSION_KEY, { roomId: snapshot.id || prev.roomId, myColor });
+        }
         return {
           ...prev,
           ...snapshot,
+          myColor,
           turn: turnColor,
           status: 'active',
           history: snapshot.history || [],
           isOver: snapshot.isOver || false,
+          result: null,
         };
       });
     }
@@ -357,6 +375,11 @@ export function useOnlineGame() {
     socket.emit('chat:send', { roomId: gameState.roomId, text: text.trim() });
   }, [gameState.roomId]);
 
+  const playAgain = useCallback(() => {
+    if (!gameState.roomId) return;
+    socket.emit('game:rematch', { roomId: gameState.roomId });
+  }, [gameState.roomId]);
+
   const leaveGame = useCallback(() => {
     sessionRemove(ONLINE_SESSION_KEY);
     setGameState(INITIAL_STATE);
@@ -392,6 +415,7 @@ export function useOnlineGame() {
     acceptResume,
     rejectResume,
     sendChatMessage,
+    playAgain,
     leaveGame,
   };
 }
