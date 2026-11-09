@@ -742,7 +742,7 @@ export default function OnlinePage() {
 
         {/* Sidebar (Desktop) & Bottom App Bar (Mobile) */}
         <aside className="game-sidebar-area">
-          <div className="sidebar-history-box" style={{ display: 'flex', flexDirection: 'column' }}>
+          <div className="sidebar-history-box">
             <div className="sidebar-tab-row">
               <button
                 type="button"
@@ -811,6 +811,7 @@ export default function OnlinePage() {
           onSendMessage={sendChatMessage}
           isMobileDrawer={true}
           onClose={() => setMobileChatOpen(false)}
+          history={gameState.history}
         />
       )}
     </div>
