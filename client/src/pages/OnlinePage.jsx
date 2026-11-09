@@ -67,8 +67,6 @@ export default function OnlinePage() {
   const [activeTab, setActiveTab] = useState('moves'); // 'moves' | 'chat'
   const [mobileChatOpen, setMobileChatOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [chatToast, setChatToast] = useState(null);
-  const chatToastTimerRef = useRef(null);
 
   // Timed pause selection modal & countdown state
   const [showPauseModal, setShowPauseModal] = useState(false);
@@ -90,17 +88,12 @@ export default function OnlinePage() {
     }
   }, [gameState.isPaused]);
 
-  // Show temporary 4-second floating toast on incoming message without blocking the board
+  // Track unread chat count when chat is not open
   useEffect(() => {
     if (!messages || messages.length === 0) return;
     const last = messages[messages.length - 1];
     if (last.sender !== gameState.myColor) {
       if (!mobileChatOpen && activeTab !== 'chat') {
-        setChatToast(last);
-        clearTimeout(chatToastTimerRef.current);
-        chatToastTimerRef.current = setTimeout(() => {
-          setChatToast(null);
-        }, 4000);
         setUnreadCount((c) => c + 1);
       }
     }
@@ -644,18 +637,6 @@ export default function OnlinePage() {
           >
             {soundEnabled ? '🔊 Sound' : '🔇 Muted'}
           </button>
-          <button
-            className="topbar-btn chat-toggle-pill"
-            onClick={() => {
-              setMobileChatOpen((o) => !o);
-              setUnreadCount(0);
-            }}
-            title="Toggle live match chat"
-            aria-label="Toggle live match chat"
-          >
-            💬 Chat
-            {unreadCount > 0 && <span className="sidebar-tab-badge">{unreadCount}</span>}
-          </button>
           <button className="topbar-btn" onClick={flipBoard}>
             ⇅ Flip
           </button>
@@ -670,25 +651,6 @@ export default function OnlinePage() {
           </button>
         </div>
       </header>
-
-      {/* Floating 4-second chat toast on incoming opponent message */}
-      {chatToast && (
-        <div
-          className="chat-floating-toast"
-          onClick={() => {
-            setMobileChatOpen(true);
-            setChatToast(null);
-            setUnreadCount(0);
-          }}
-          role="alert"
-        >
-          <span className="chat-toast-icon">💬</span>
-          <span className="chat-toast-text">
-            <strong>Opponent:</strong> {chatToast.text}
-          </span>
-          <span className="chat-toast-action">Reply →</span>
-        </div>
-      )}
 
       {/* Main Container */}
       <main className="game-app-container">
@@ -829,6 +791,11 @@ export default function OnlinePage() {
                 setDrawOfferedByMe(true);
               }}
               onResign={resign}
+              onOpenChat={() => {
+                setMobileChatOpen(true);
+                setUnreadCount(0);
+              }}
+              unreadChatCount={unreadCount}
               onNewGame={handleSafeExit}
               onHome={handleSafeExit}
             />

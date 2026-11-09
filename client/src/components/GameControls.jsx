@@ -27,6 +27,8 @@ export default function GameControls({
   isOnline = false,
   onOfferDraw,
   onResign,
+  onOpenChat,
+  unreadChatCount = 0,
 }) {
   const handleResignWhite = () => {
     if (window.confirm('White resigns? This cannot be undone.')) onResignWhite();
@@ -227,14 +229,30 @@ export default function GameControls({
               <span className="mobile-nav-label">{drawOfferPending ? 'Offered' : 'Draw'}</span>
             </button>
 
-            <button
-              className="mobile-nav-btn mobile-nav-btn--danger"
-              onClick={isOnline ? handleResignGeneral : (activeTurn === 'black' ? handleResignBlack : handleResignWhite)}
-              title="Resign"
-            >
-              <span className="mobile-nav-icon">🏳</span>
-              <span className="mobile-nav-label">Resign</span>
-            </button>
+            {isOnline ? (
+              <button
+                className="mobile-nav-btn"
+                onClick={onOpenChat}
+                title="Chat with opponent"
+              >
+                <span className="mobile-nav-icon" style={{ position: 'relative' }}>
+                  💬
+                  {unreadChatCount > 0 && (
+                    <span className="mobile-chat-badge">{unreadChatCount}</span>
+                  )}
+                </span>
+                <span className="mobile-nav-label">Chat</span>
+              </button>
+            ) : (
+              <button
+                className="mobile-nav-btn mobile-nav-btn--danger"
+                onClick={activeTurn === 'black' ? handleResignBlack : handleResignWhite}
+                title="Resign"
+              >
+                <span className="mobile-nav-icon">🏳</span>
+                <span className="mobile-nav-label">Resign</span>
+              </button>
+            )}
           </>
         )}
 

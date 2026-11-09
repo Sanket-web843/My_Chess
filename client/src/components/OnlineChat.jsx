@@ -18,7 +18,6 @@ export default function OnlineChat({
   isMobileDrawer = false,
 }) {
   const [inputText, setInputText] = useState('');
-  const [isMinimized, setIsMinimized] = useState(false);
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -26,10 +25,8 @@ export default function OnlineChat({
   };
 
   useEffect(() => {
-    if (!isMinimized) {
-      scrollToBottom();
-    }
-  }, [messages.length, isMinimized]);
+    scrollToBottom();
+  }, [messages.length]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -59,104 +56,85 @@ export default function OnlineChat({
 
   const content = (
     <div
-      className={`online-chat-box ${isMobileDrawer ? 'online-chat-box--drawer' : ''} ${
-        isMinimized ? 'online-chat-box--minimized' : ''
-      }`}
+      className={`online-chat-box ${isMobileDrawer ? 'online-chat-box--drawer' : ''}`}
       onClick={(e) => e.stopPropagation()}
     >
       {isMobileDrawer && (
         <div className="online-chat-header">
-          <div className="online-chat-header-left">
-            <span className="online-chat-title">💬 Live Match Chat</span>
-            <span className="online-chat-hint">(auto-hides on send)</span>
-          </div>
-          <div className="online-chat-header-actions">
-            <button
-              type="button"
-              className="online-chat-min-btn"
-              onClick={() => setIsMinimized((m) => !m)}
-              title={isMinimized ? 'Expand chat' : 'Peek at board'}
-            >
-              {isMinimized ? '▲ Open' : '▼ Board'}
-            </button>
-            <button
-              type="button"
-              className="online-chat-close-btn"
-              onClick={onClose}
-              aria-label="Close chat"
-            >
-              ✕
-            </button>
-          </div>
+          <span className="online-chat-title">💬 Live Match Chat</span>
+          <button
+            type="button"
+            className="online-chat-close-btn"
+            onClick={onClose}
+            aria-label="Close chat"
+          >
+            ✕ Close
+          </button>
         </div>
       )}
 
-      {!isMinimized && (
-        <>
-          <div className="online-chat-messages" role="log" aria-live="polite">
-            {messages.length === 0 ? (
-              <div className="online-chat-empty">
-                <span>💬</span>
-                <p>No messages yet.<br />Use quick replies or type below!</p>
-              </div>
-            ) : (
-              messages.map((msg) => {
-                const isMe = msg.sender === myColor;
-                return (
-                  <div
-                    key={msg.id}
-                    className={`chat-bubble-wrap ${isMe ? 'chat-bubble-wrap--me' : 'chat-bubble-wrap--them'}`}
-                  >
-                    <div className={`chat-bubble ${isMe ? 'chat-bubble--me' : 'chat-bubble--them'}`}>
-                      <div className="chat-bubble-sender">
-                        {isMe ? 'You' : `Opponent (${msg.sender})`}
-                      </div>
-                      <div className="chat-bubble-text">{msg.text}</div>
-                      <div className="chat-bubble-time">{formatTime(msg.timestamp)}</div>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-            <div ref={messagesEndRef} />
+      <div className="online-chat-messages" role="log" aria-live="polite">
+        {messages.length === 0 ? (
+          <div className="online-chat-empty">
+            <span>💬</span>
+            <p>No messages yet.<br />Use quick replies or type below!</p>
           </div>
-
-          {/* Quick Reaction Chips for 1-tap instant response on mobile */}
-          <div className="online-chat-chips">
-            {QUICK_PRESETS.map((preset) => (
-              <button
-                key={preset}
-                type="button"
-                className="chat-chip-btn"
-                onClick={() => handleQuickPreset(preset)}
+        ) : (
+          messages.map((msg) => {
+            const isMe = msg.sender === myColor;
+            return (
+              <div
+                key={msg.id}
+                className={`chat-bubble-wrap ${isMe ? 'chat-bubble-wrap--me' : 'chat-bubble-wrap--them'}`}
               >
-                {preset}
-              </button>
-            ))}
-          </div>
+                <div className={`chat-bubble ${isMe ? 'chat-bubble--me' : 'chat-bubble--them'}`}>
+                  <div className="chat-bubble-sender">
+                    {isMe ? 'You' : `Opponent (${msg.sender})`}
+                  </div>
+                  <div className="chat-bubble-text">{msg.text}</div>
+                  <div className="chat-bubble-time">{formatTime(msg.timestamp)}</div>
+                </div>
+              </div>
+            );
+          })
+        )}
+        <div ref={messagesEndRef} />
+      </div>
 
-          <form className="online-chat-input-row" onSubmit={handleSubmit}>
-            <input
-              type="text"
-              className="online-chat-input"
-              placeholder="Type message (max 150 chars)..."
-              value={inputText}
-              maxLength={150}
-              onChange={(e) => setInputText(e.target.value)}
-              autoComplete="off"
-            />
-            <button
-              type="submit"
-              className="online-chat-send-btn"
-              disabled={!inputText.trim()}
-              title="Send and return to board"
-              aria-label="Send message"
-            >
-              Send
-            </button>
-          </form>
-        </>
-      )}
+      {/* Quick Reaction Chips for 1-tap instant response on mobile */}
+      <div className="online-chat-chips">
+        {QUICK_PRESETS.map((preset) => (
+          <button
+            key={preset}
+            type="button"
+            className="chat-chip-btn"
+            onClick={() => handleQuickPreset(preset)}
+          >
+            {preset}
+          </button>
+        ))}
+      </div>
+
+      <form className="online-chat-input-row" onSubmit={handleSubmit}>
+        <input
+          type="text"
+          className="online-chat-input"
+          placeholder="Type message (max 150 chars)..."
+          value={inputText}
+          maxLength={150}
+          onChange={(e) => setInputText(e.target.value)}
+          autoComplete="off"
+        />
+        <button
+          type="submit"
+          className="online-chat-send-btn"
+          disabled={!inputText.trim()}
+          title="Send and return to board"
+          aria-label="Send message"
+        >
+          Send
+        </button>
+      </form>
     </div>
   );
 

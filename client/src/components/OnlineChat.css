@@ -100,19 +100,21 @@
 }
 
 .online-chat-close-btn {
-  background: none;
-  border: none;
-  color: var(--clr-text-muted);
-  font-size: 1.1rem;
+  background-color: var(--clr-bg-surface);
+  border: 1px solid var(--clr-border);
+  color: var(--clr-text-main);
+  font-size: 0.8rem;
+  font-weight: 600;
   cursor: pointer;
-  padding: 0.15rem 0.45rem;
+  padding: 0.25rem 0.65rem;
   border-radius: var(--radius-xs);
-  line-height: 1;
+  transition: all 0.15s;
 }
 
 .online-chat-close-btn:hover {
   color: var(--clr-white);
-  background-color: var(--clr-bg-hover);
+  border-color: var(--clr-danger);
+  background-color: rgba(224, 83, 83, 0.15);
 }
 
 .online-chat-messages {
@@ -322,61 +324,20 @@
   font-weight: 700;
 }
 
-.chat-toggle-pill {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-}
-
-/* Floating Non-Intrusive Opponent Message Toast */
-.chat-floating-toast {
+.mobile-chat-badge {
   position: absolute;
-  top: 50px;
-  left: 50%;
-  transform: translateX(-50%);
+  top: -4px;
+  right: -8px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background-color: var(--clr-accent);
+  color: #161512;
+  font-size: 0.65rem;
+  font-weight: 700;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  background-color: rgba(30, 28, 25, 0.94);
-  backdrop-filter: blur(8px);
-  border: 1px solid var(--clr-border);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
-  border-radius: 20px;
-  padding: 0.35rem 0.85rem;
-  max-width: 90vw;
-  z-index: 80;
-  cursor: pointer;
-  animation: fadeInDown 0.2s ease-out;
-}
-
-@keyframes fadeInDown {
-  from {
-    opacity: 0;
-    transform: translate(-50%, -10px);
-  }
-  to {
-    opacity: 1;
-    transform: translate(-50%, 0);
-  }
-}
-
-.chat-toast-icon {
-  font-size: 1rem;
-}
-
-.chat-toast-text {
-  font-size: 0.82rem;
-  color: var(--clr-white);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 220px;
-}
-
-.chat-toast-action {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--clr-accent);
-  margin-left: 0.25rem;
+  justify-content: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
