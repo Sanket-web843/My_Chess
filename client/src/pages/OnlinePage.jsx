@@ -3,7 +3,7 @@
  * Timed Pauses (1m, 2m, max 5m), Authoritative Timeout Forfeit, and Strict Pauser-Only Resume.
  */
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useOnlineGame } from '../hooks/useOnlineGame.js';
 import { useOnlineClock } from '../hooks/useOnlineClock.js';
@@ -67,6 +67,8 @@ export default function OnlinePage() {
   const [activeTab, setActiveTab] = useState('moves'); // 'moves' | 'chat'
   const [mobileChatOpen, setMobileChatOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [chatToast, setChatToast] = useState(null);
+  const chatToastTimerRef = useRef(null);
 
   // Timed pause selection modal & countdown state
   const [showPauseModal, setShowPauseModal] = useState(false);
@@ -88,12 +90,19 @@ export default function OnlinePage() {
     }
   }, [gameState.isPaused]);
 
-  // Track unread chat messages when chat is not in active view
+  // Show temporary 4-second floating toast on incoming message without blocking the board
   useEffect(() => {
     if (!messages || messages.length === 0) return;
     const last = messages[messages.length - 1];
-    if (last.sender !== gameState.myColor && activeTab !== 'chat' && !mobileChatOpen) {
-      setUnreadCount((c) => c + 1);
+    if (last.sender !== gameState.myColor) {
+      if (!mobileChatOpen && activeTab !== 'chat') {
+        setChatToast(last);
+        clearTimeout(chatToastTimerRef.current);
+        chatToastTimerRef.current = setTimeout(() => {
+          setChatToast(null);
+        }, 4000);
+        setUnreadCount((c) => c + 1);
+      }
     }
   }, [messages, gameState.myColor, activeTab, mobileChatOpen]);
 
@@ -661,6 +670,25 @@ export default function OnlinePage() {
           </button>
         </div>
       </header>
+
+      {/* Floating 4-second chat toast on incoming opponent message */}
+      {chatToast && (
+        <div
+          className="chat-floating-toast"
+          onClick={() => {
+            setMobileChatOpen(true);
+            setChatToast(null);
+            setUnreadCount(0);
+          }}
+          role="alert"
+        >
+          <span className="chat-toast-icon">💬</span>
+          <span className="chat-toast-text">
+            <strong>Opponent:</strong> {chatToast.text}
+          </span>
+          <span className="chat-toast-action">Reply →</span>
+        </div>
+      )}
 
       {/* Main Container */}
       <main className="game-app-container">
